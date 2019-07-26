@@ -3,6 +3,12 @@
 
 const IPFS = require('ipfs')
 
+// Libp2p def
+const pLibp2pBundle = require('./pnet-bundle.js')
+const repo = 'ipfs-' + Math.random()
+const swarmKey = '/key/swarm/psk/1.0.0/\n/base16/\n826db2396724c0619a8deb0430c77a3f4af0ed4086785b5e2d5e8f2b13bcd0f4'
+console.log("swarmKey: ", swarmKey)
+
 // Node
 const $nodeId = document.querySelector('.node-id')
 const $nodeAddresses = document.querySelector('.node-addresses')
@@ -29,9 +35,11 @@ const $workspaceInput = document.querySelector('#workspace-input')
 const $workspaceBtn = document.querySelector('#workspace-btn')
 
 let FILES = []
-let workspace = location.hash
+//let workspace = location.hash
+ 
+let workspace = 'testWorkspace'
 
-console.log(workspace);
+console.log('workespace:',workspace)
 
 let fileSize = 0
 
@@ -43,38 +51,58 @@ let Buffer = IPFS.Buffer
    Start the IPFS node
    =========================================================================== */
 
-function start () {
-  if (!node) {
-    const options = {
-      EXPERIMENTAL: {
-        pubsub: true
+function start() {
+  //if (!node) {
+  const options = {
+    EXPERIMENTAL: {
+      pubsub: true
+    },
+    libp2p: pLibp2pBundle(swarmKey),
+    repo: repo,
+    config: {
+      Addresses: {
+        //API: ['/ip4/127.0.0.1/tcp/5002'],
+        Swarm: [//'/ip4/127.0.0.1/tcp/443/wss/p2p-websocket-star'
+        '/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star'
+        ]
       },
-      repo: 'ipfs-' + Math.random(),
-      config: {
-        Addresses: {
-          Swarm: ['/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star']
+      Bootstrap: [
+        //'/ip4/127.0.01/tcp/4003/ws/QmbHFd8uGggKEMXS1Xs1sUBPk2vzzh265J8pC9vSDKRpum'
+        '/ip4/129.211.127.93/tcp/4003/ws/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v'
+      ],
+      Discovery: {
+        MDNS: {
+          Enabled: true,
+          Interval: 10
         }
       }
     }
-
-    node = new IPFS(options)
-
-    node.once('start', () => {
-      node.id()
-        .then((id) => {
-          info = id
-          updateView('ready', node)
-          onSuccess('Node is ready.')
-          setInterval(refreshPeerList, 1000)
-          setInterval(sendFileList, 10000)
-        })
-        .catch((error) => onError(error))
-
-      subscribeToWorkpsace()
-
-      window.addEventListener('hashchange', workspaceUpdated)
-    })
   }
+
+  node = new IPFS(options)
+
+  node.once('start', () => {
+    node.id()
+      .then((id) => {
+        info = id
+        node.bootstrap.list((err, res) => {
+          if (err) {
+            console.log(err)
+          }
+          console.log(res.addr)
+        })
+        updateView('ready', node)
+        onSuccess('Node is ready.')
+        setInterval(refreshPeerList, 1000)
+        setInterval(sendFileList, 10000)
+      })
+      .catch((error) => onError(error))
+
+    subscribeToWorkpsace()
+
+    window.addEventListener('hashchange', workspaceUpdated)
+  })
+  //}
 }
 
 /* ===========================================================================
@@ -139,7 +167,7 @@ const resetProgress = () => {
   $progressBar.style.transform = 'translateX(-100%)'
 }
 
-function appendFile (name, hash, size, data) {
+function appendFile(name, hash, size, data) {
   const file = new window.Blob([data], { type: 'application/octet-binary' })
   const url = window.URL.createObjectURL(file)
   const row = document.createElement('tr')
@@ -170,7 +198,7 @@ function appendFile (name, hash, size, data) {
   publishHash(hash)
 }
 
-function getFile () {
+function getFile() {
   const hash = $multihashInput.value
 
   $multihashInput.value = ''
@@ -203,14 +231,14 @@ const onDragEnter = () => $dragContainer.classList.add('dragging')
 
 const onDragLeave = () => $dragContainer.classList.remove('dragging')
 
-function onDrop (event) {
+function onDrop(event) {
   onDragLeave()
   event.preventDefault()
 
   const dt = event.dataTransfer
   const filesDropped = dt.files
 
-  function readFileContents (file) {
+  function readFileContents(file) {
     return new Promise((resolve) => {
       const reader = new window.FileReader()
       reader.onload = (event) => resolve(event.target.result)
@@ -252,7 +280,7 @@ function onDrop (event) {
    Peers handling
    =========================================================================== */
 
-function connectToPeer (event) {
+function connectToPeer(event) {
   const multiaddr = $multiaddrInput.value
 
   if (!multiaddr) {
@@ -267,7 +295,7 @@ function connectToPeer (event) {
     .catch(() => onError('An error occurred when connecting to the peer.'))
 }
 
-function refreshPeerList () {
+function refreshPeerList() {
   node.swarm.peers()
     .then((peers) => {
       const peersAsHtml = peers.reverse()
@@ -294,12 +322,12 @@ function refreshPeerList () {
    Error handling
    =========================================================================== */
 
-function onSuccess (msg) {
+function onSuccess(msg) {
   $logs.classList.add('success')
   $logs.innerHTML = msg
 }
 
-function onError (err) {
+function onError(err) {
   let msg = 'An error occured, check the dev console'
 
   if (err.stack !== undefined) {
@@ -331,7 +359,7 @@ const states = {
   }
 }
 
-function updateView (state, ipfs) {
+function updateView(state, ipfs) {
   if (states[state] !== undefined) {
     states[state]()
   } else {
