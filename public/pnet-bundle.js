@@ -52,8 +52,7 @@ const pLibp2pBundle = (swarmKey) => {
         transport: [
           WS,
           wrtcstar,
-          wsstar,
-          TCP
+          wsstar
         ],
         streamMuxer: [
           Multiplex
@@ -61,7 +60,12 @@ const pLibp2pBundle = (swarmKey) => {
         connEncryption: [
           SECIO
         ],
-        dht: KadDHT,
+        peerDiscovery: [
+            wrtcstar.discovery,
+            wsstar.discovery,
+            Bootstrap
+          ],
+          dht: KadDHT,
         connProtector: new Protector(swarmKey)
       },
       config: {
@@ -79,9 +83,9 @@ const pLibp2pBundle = (swarmKey) => {
         },
         dht: {
           kBucketSize: 20,
-          enabled: true,
+          enabled: false,
           randomWalk: {
-            enabled: true
+            enabled: false
           }
         },
         EXPERIMENTAL: {

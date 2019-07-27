@@ -36,7 +36,7 @@ const $workspaceBtn = document.querySelector('#workspace-btn')
 
 let FILES = []
 //let workspace = location.hash
- 
+
 let workspace = 'testWorkspace'
 
 console.log('workespace:',workspace)
@@ -57,18 +57,18 @@ function start() {
     EXPERIMENTAL: {
       pubsub: true
     },
-    libp2p: pLibp2pBundle(swarmKey),
+   libp2p: pLibp2pBundle(swarmKey),
     repo: repo,
     config: {
-      Addresses: {
-        //API: ['/ip4/127.0.0.1/tcp/5002'],
-        Swarm: [//'/ip4/127.0.0.1/tcp/443/wss/p2p-websocket-star'
-        '/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star'
-        ]
-      },
+      // Addresses: {
+      //   //API: ['/ip4/127.0.0.1/tcp/5002'],
+      //   Swarm: [
+      //     //'/ip4/0.0.0.0/tcp/9010/ws'
+      //   //'/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star'
+      //   ]
+      // },
       Bootstrap: [
-        //'/ip4/127.0.01/tcp/4003/ws/QmbHFd8uGggKEMXS1Xs1sUBPk2vzzh265J8pC9vSDKRpum'
-        '/ip4/129.211.127.93/tcp/4003/ws/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v'
+        '/ip4/129.211.127.83/tcp/4003/ws/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v'
       ],
       Discovery: {
         MDNS: {
@@ -94,7 +94,7 @@ function start() {
         updateView('ready', node)
         onSuccess('Node is ready.')
         setInterval(refreshPeerList, 1000)
-        setInterval(sendFileList, 10000)
+        setInterval(sendFileList, 2000)
       })
       .catch((error) => onError(error))
 
