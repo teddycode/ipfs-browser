@@ -1,32 +1,22 @@
 'use strict'
 
 const Libp2p = require('libp2p')
-const WS = require('libp2p-websockets')
-const TCP = require('libp2p-tcp')
-const Multiplex = require('pull-mplex')
-const SECIO = require('libp2p-secio')
-const Protector = require('libp2p-pnet')
-const Bootstrap = require('libp2p-bootstrap')
-const KadDHT = require('libp2p-kad-dht')
-const WebSocketStarMulti = require('libp2p-websocket-star-multi')
-const multiaddr = require('multiaddr')
-const WebRTCStar = require('libp2p-webrtc-star')
-/**
- * Options for the libp2p bundle
- * @typedef {Object} libp2pBundle~options
- * @property {PeerInfo} peerInfo - The PeerInfo of the IPFS node
- * @property {PeerBook} peerBook - The PeerBook of the IPFS node
- * @property {Object} config - The config of the IPFS node
- * @property {Object} options - The options given to the IPFS node
- */
 
-/**
- * privateLibp2pBundle returns a libp2p bundle function that will use the swarm
- * key at the given `swarmKey` to create the Protector
- *
- * @param {string} swarmKey The path to our swarm key
- * @returns {libp2pBundle} Returns a libp2pBundle function for use in IPFS creation
- */
+const WebRTCStar = require('libp2p-webrtc-star')
+const WebSockets = require('libp2p-websockets')
+const WebSocketStar = require('libp2p-websocket-star')
+const Multiplex = require('libp2p-mplex')
+const SPDY = require('libp2p-spdy')
+const SECIO = require('libp2p-secio')
+const Bootstrap = require('libp2p-bootstrap')
+const Protector = require('libp2p-pnet')
+const KadDHT = require('libp2p-kad-dht')
+
+// Find this list at: https://github.com/ipfs/js-ipfs/blob/master/src/core/runtime/config-browser.json
+const bootstrapList = [
+  '/ip4/129.211.127.83/tcp/4003/ws/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v'
+]
+
 const pLibp2pBundle = (swarmKey) => {
   /**
    * This is the bundle we will use to create our fully customized libp2p bundle.
@@ -38,11 +28,8 @@ const pLibp2pBundle = (swarmKey) => {
     const peerInfo = opts.peerInfo
     const peerBook = opts.peerBook
 
-    const wrtcstar = new WebRTCStar({ id: peerInfo.id })
-    // const wsstar = new WebSocketStar({ id: peerInfo.id })
-    const wsstarServers = peerInfo.multiaddrs.toArray().map(String).filter(addr => addr.includes('p2p-websocket-star'))
-    peerInfo.multiaddrs.replace(wsstarServers.map(multiaddr), '/p2p-websocket-star') // the ws-star-multi module will replace this with the chosen ws-star servers
-    const wsstar = new WebSocketStarMulti({ servers: wsstarServers, id: peerInfo.id, ignore_no_online: !wsstarServers.length || opts.wsStarIgnoreErrors })
+    const wrtcStar = new WebRTCStar({ id: peerInfo.id })
+    const wsstar = new WebSocketStar({ id: peerInfo.id })
 
     // Build and return our libp2p node
     return new Libp2p({
@@ -50,35 +37,45 @@ const pLibp2pBundle = (swarmKey) => {
       peerBook,
       modules: {
         transport: [
-          WS,
-          wrtcstar,
+          wrtcStar,
+          WebSockets,
           wsstar
         ],
         streamMuxer: [
-          Multiplex
+          Multiplex,
+          SPDY
         ],
         connEncryption: [
           SECIO
         ],
         peerDiscovery: [
-            wrtcstar.discovery,
-            wsstar.discovery,
-            Bootstrap
-          ],
-          dht: KadDHT,
+          wrtcStar.discovery,
+          wsstar.discovery,
+          Bootstrap
+        ],
+        dht: KadDHT,
         connProtector: new Protector(swarmKey)
       },
       config: {
         peerDiscovery: {
           autoDial: true,
           bootstrap: {
-            enabled: true
+            interval: 20e3,
+            enabled: true,
+            list: bootstrapList
           },
           webRTCStar: {
             enabled: true
           },
           websocketStar: {
             enabled: true
+          }
+        },
+        relay: {
+          enabled: true,
+          hop: {
+            enabled: false,
+            active: false
           }
         },
         dht: {
@@ -91,6 +88,10 @@ const pLibp2pBundle = (swarmKey) => {
         EXPERIMENTAL: {
           pubsub: true
         }
+      },
+      connectionManager: {
+        minPeers: 10,
+        maxPeers: 50
       }
     })
   }

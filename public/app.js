@@ -60,16 +60,16 @@ function start() {
    libp2p: pLibp2pBundle(swarmKey),
     repo: repo,
     config: {
-      // Addresses: {
-      //   //API: ['/ip4/127.0.0.1/tcp/5002'],
-      //   Swarm: [
-      //     //'/ip4/0.0.0.0/tcp/9010/ws'
-      //   //'/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star'
-      //   ]
-      // },
-      Bootstrap: [
-        '/ip4/129.211.127.83/tcp/4003/ws/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v'
-      ],
+      // // Addresses: {
+      // //   //API: ['/ip4/127.0.0.1/tcp/5002'],
+      // //   Swarm: [
+      // //     //'/ip4/0.0.0.0/tcp/9010/ws'
+      // //   //'/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star'
+      // //   ]
+      // // },
+      // Bootstrap: [
+      //   '/ip4/129.211.127.83/tcp/4003/ws/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v'
+      // ],
       Discovery: {
         MDNS: {
           Enabled: true,
