@@ -11,11 +11,7 @@ const SECIO = require('libp2p-secio')
 const Bootstrap = require('libp2p-bootstrap')
 const Protector = require('libp2p-pnet')
 const KadDHT = require('libp2p-kad-dht')
-
-// Find this list at: https://github.com/ipfs/js-ipfs/blob/master/src/core/runtime/config-browser.json
-const bootstrapList = [
-  '/ip4/129.211.127.83/tcp/4003/ws/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v'
-]
+const MDNS = require('libp2p-mdns')
 
 const pLibp2pBundle = (swarmKey) => {
   /**
@@ -27,6 +23,7 @@ const pLibp2pBundle = (swarmKey) => {
     // Set convenience variables to clearly showcase some of the useful things that are available
     const peerInfo = opts.peerInfo
     const peerBook = opts.peerBook
+    const bootstrapList =opts.config.Bootstrap
 
     const wrtcStar = new WebRTCStar({ id: peerInfo.id })
     const wsstar = new WebSocketStar({ id: peerInfo.id })
@@ -52,6 +49,7 @@ const pLibp2pBundle = (swarmKey) => {
           wrtcStar.discovery,
           wsstar.discovery,
           Bootstrap
+          //MDNS
         ],
         dht: KadDHT,
         connProtector: new Protector(swarmKey)
@@ -59,6 +57,10 @@ const pLibp2pBundle = (swarmKey) => {
       config: {
         peerDiscovery: {
           autoDial: true,
+          mdns:{
+            interval: 1000,
+            enabled: true
+          },
           bootstrap: {
             interval: 20e3,
             enabled: true,
@@ -74,8 +76,8 @@ const pLibp2pBundle = (swarmKey) => {
         relay: {
           enabled: true,
           hop: {
-            enabled: false,
-            active: false
+            enabled: true,
+            active: true
           }
         },
         dht: {

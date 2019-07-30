@@ -39,7 +39,7 @@ let FILES = []
 
 let workspace = 'testWorkspace'
 
-console.log('workespace:',workspace)
+console.log('workespace:', workspace)
 
 let fileSize = 0
 
@@ -57,22 +57,46 @@ function start() {
     EXPERIMENTAL: {
       pubsub: true
     },
-   libp2p: pLibp2pBundle(swarmKey),
+    libp2p: pLibp2pBundle(swarmKey),
     repo: repo,
+    // config: {
+    //   Addresses: {
+    //     Swarm: [
+    //     ],
+    //     API: '',
+    //     Gateway: '',
+    //     Delegates: []
+    //   },
+    //   Discovery: {
+    //     MDNS: {
+    //       Enabled: false,
+    //       Interval: 10
+    //     },
+    //     webRTCStar: {
+    //       Enabled: true
+    //     }
+    //   },
+    //   Swarm: {
+    //     ConnMgr: {
+    //       LowWater: 200,
+    //       HighWater: 500
+    //     }
+    //   }
+    // }
     config: {
-      // // Addresses: {
-      // //   //API: ['/ip4/127.0.0.1/tcp/5002'],
-      // //   Swarm: [
-      // //     //'/ip4/0.0.0.0/tcp/9010/ws'
-      // //   //'/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star'
-      // //   ]
-      // // },
-      // Bootstrap: [
-      //   '/ip4/129.211.127.83/tcp/4003/ws/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v'
-      // ],
+      Addresses: {
+        //API: ['/ip4/127.0.0.1/tcp/5002'],
+        Swarm: [
+          '/ip4/129.211.127.83/tcp/80/ws/p2p-webrtc-star/'
+        ]
+      },
+      Bootstrap:[
+        '/ip4/129.211.127.83/tcp/4003/ws/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v',
+        '/ip4/129.211.127.83/tcp/80/ws/p2p-webrtc-star/ipfs/QmQdZUAg1a7cNYKTzfYRh72M3md61JJH5gXz7WhePawHzN'
+      ],
       Discovery: {
         MDNS: {
-          Enabled: true,
+          Enabled: false,
           Interval: 10
         }
       }
@@ -89,7 +113,7 @@ function start() {
           if (err) {
             console.log(err)
           }
-          console.log(res.addr)
+          console.log(res)
         })
         updateView('ready', node)
         onSuccess('Node is ready.')
