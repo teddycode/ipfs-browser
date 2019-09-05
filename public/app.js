@@ -87,12 +87,11 @@ function start() {
       Addresses: {
         //API: ['/ip4/127.0.0.1/tcp/5002'],
         Swarm: [
-          '/ip4/129.211.127.83/tcp/80/ws/p2p-webrtc-star/'
+          '/ip4/129.211.127.83/tcp/4433/wss/p2p-websocket-star/'
         ]
       },
       Bootstrap:[
-        '/ip4/129.211.127.83/tcp/4003/ws/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v',
-        '/ip4/129.211.127.83/tcp/80/ws/p2p-webrtc-star/ipfs/QmQdZUAg1a7cNYKTzfYRh72M3md61JJH5gXz7WhePawHzN'
+        '/ip4/129.211.127.83/tcp/4003/ws/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v'
       ],
       Discovery: {
         MDNS: {
