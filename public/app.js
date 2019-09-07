@@ -5,7 +5,7 @@ const IPFS = require('ipfs')
 
 // Libp2p def
 const pLibp2pBundle = require('./pnet-bundle.js')
-const repo = 'ipfs-' + Math.random()
+const repo = 'ipfs-repo'
 const swarmKey = '/key/swarm/psk/1.0.0/\n/base16/\n826db2396724c0619a8deb0430c77a3f4af0ed4086785b5e2d5e8f2b13bcd0f4'
 console.log("swarmKey: ", swarmKey)
 
@@ -59,39 +59,21 @@ function start() {
     },
     libp2p: pLibp2pBundle(swarmKey),
     repo: repo,
-    // config: {
-    //   Addresses: {
-    //     Swarm: [
-    //     ],
-    //     API: '',
-    //     Gateway: '',
-    //     Delegates: []
-    //   },
-    //   Discovery: {
-    //     MDNS: {
-    //       Enabled: false,
-    //       Interval: 10
-    //     },
-    //     webRTCStar: {
-    //       Enabled: true
-    //     }
-    //   },
-    //   Swarm: {
-    //     ConnMgr: {
-    //       LowWater: 200,
-    //       HighWater: 500
-    //     }
-    //   }
-    // }
+    preload: {
+      enabled: true,
+      addresses: [
+        '/dns4/guetdcl.cn/tcp/8082/wss/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v'
+      ]
+    },
     config: {
       Addresses: {
         //API: ['/ip4/127.0.0.1/tcp/5002'],
         Swarm: [
-          '/ip4/129.211.127.83/tcp/4433/wss/p2p-websocket-star/'
+          '/dns4/guetdcl.cn/tcp/4433/wss/p2p-websocket-star/'
         ]
       },
-      Bootstrap:[
-        '/ip4/129.211.127.83/tcp/4003/ws/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v'
+      Bootstrap: [
+        '/dns4/guetdcl.cn/tcp/8082/wss/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v'
       ],
       Discovery: {
         MDNS: {
@@ -136,6 +118,7 @@ const messageHandler = (message) => {
   const myNode = info.id
   const hash = message.data.toString()
   const messageSender = message.from
+  console.log('Dot1: get messages!')
 
   // append new files when someone uploads them
   if (myNode !== messageSender && !isFileInList(hash)) {
@@ -219,6 +202,28 @@ function appendFile(name, hash, size, data) {
   $fileHistory.insertBefore(row, $fileHistory.firstChild)
 
   publishHash(hash)
+}
+
+
+function lsFile() {
+  const hash = $multihashInput.value
+  $multihashInput.value = ''
+
+  if (!hash) {
+    return onError('No multihash was inserted.')
+  } else if (isFileInList(hash)) {
+    return onSuccess('The file is already in the current workspace.')
+  }
+  node.ls(hash)
+    .then((files) => {
+      files.forEach((file) => {
+        if (file.content) {
+          appendFile(file.name, hash, file.size, file.content)
+          onSuccess(`The ${file.name} file was added.`)
+          $emptyRow.style.display = 'none'
+        }
+      })
+    })
 }
 
 function getFile() {

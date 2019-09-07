@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "bundle": "browserify public/app.js > public/bundle.js",
-    "start": "http-server -c-1 -p 12345 public",
+    "start": "http-server -c-1 -p 12345 -S -C /root/ipfs-browser/cert/192.168.159.128:12345.crt -K /root/ipfs-browser/cert/192.168.159.128:12345.key  public",
     "dev": "npm run bundle && npm run start"
   },
   "license": "MIT",
