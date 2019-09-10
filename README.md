@@ -1,207 +1,59 @@
-# Exchange files between the browser and other IPFS nodes
+基础环境
+1. 操作系统：windows/ubuntu
+2. 浏览器 ： chrome
+3. 节点集群 ： 1 js-ipfs（内网） + 4 go-ipfs（1外3内） + 3 ipfs-browser（2外1内）
 
-This tutorial will help you exchange files between browser nodes and go-ipfs or js-ipfs nodes!
+已知问题
+一、Go ipfs 
+1. go节点尚未实现wss，只能通过使用nginx反向代理来开启WSS。
 
-**Note:** As `js-ipfs@0.33.x` currently doesn't support DHT peer discovery, the peer from which you are fetching data should be within the reach (local or in public IP) of the browser node.
+二、nodejs ipfs
+1.js节点运行一段时间栈溢出问题
 
-That being said, we will explain how to circumvent these caveats and once they are fixed, we'll update the tutorial as well.
+解决方案：libp2p模块的 v0.25.4 版本存在问题，更新为0.26.1即可
 
-## Application diagram
 
-The goal of this tutorial is to create a simple application with an IPFS node that dials to other instances using WebRTC, and at the same time dial and transfer files from a browser IPFS node using WebSockets as the transport.
+三、ipfs-browser
+1. webcrypto在浏览器引起安全性保护的问题
+在公网部上部署ipfs-browser的例子——exchange-file-in-browser，在本地谷歌浏览器中打开报错：
 
-```
-┌──────────────┐                ┌──────────────┐
-│   Browser    │ libp2p(WebRTC) │   Browser    │
-│              │◀──────────────▶│              │
-└──────────────┘                └──────────────┘
-       ▲                                  ▲
-       │WebSockets              WebSockets│
-       │        ┌──────────────┐          │
-       │        │   Desktop    │          │
-       └───────▶│   Terminal   │◀─────────┘
-                └──────────────┘
-```
+打开bundle.js查看
 
-## Tutorial goal
+github issues 描述地址：
+https://github.com/libp2p/js-libp2p-crypto/pull/149、https://github.com/ipfs/js-ipfs/issues/964
+解决方案：
+添加HTTPS证书
 
-The goal of this tutorial is for you to have something like this in the end:
+访问https://guetdcl.cn:9090
 
-![](img/goal.png)
+需要启用websocket中转服务器的ssl （websocket服务器可以使用集群式实现高可靠）
+websocket中转服务器
+rendezvous --cert="/root/cert/Nginx/1_www.guetdcl.cn_bundle.crt"  --key="/root/cert/Nginx/2_www.guetdcl.cn.key" --port=4433  --cryptoChallenge=true
 
-## Step-by-step instructions
 
-Here's what we are going to be doing:
+dns4/guetdcl.cn/tcp/8082/wss/p2p-websocket-star/
 
-1. Install a `go-ipfs` or `js-ipfs` node in your machine
-2. Make your daemons listen on WebSockets
-3. Start the app
-4. Dial to a node using WebSockets (your desktop ones)
-5. Transfer files between all of your nodes!
 
-Just follow the instructions below and it will be up and running in no time!
+webrtc信令转服务器
+star-sihnal --host=127.0.0.1 --port=9092  & nginx 反向代理到8082端口
 
-### 1. Install `go-ipfs` or `js-ipfs`
 
-If you already have `go-ipfs` or `js-ipfs` installed in your machine, you can skip this step. Otherwise, read on.
+/dns/guetdcl.cn/tcp/8083/wss/p2p-webrtc-star/
 
-This tutorial works with either `go-ipfs` or `js-ipfs`, so you can install one of your choosing.
 
-`go-ipfs` can be installed via its binary [here](https://ipfs.io/ipns/dist.ipfs.io/#go-ipfs). Alternatively, you can follow the install instructions in [ipfs/go-ipfs](https://github.com/ipfs/go-ipfs#install).
 
-`js-ipfs` requires you to have [node and npm](https://www.npmjs.com/get-npm) installed. Then, you simply run:
+同时，所有go节点需要通过Nginx来打开WSS，这样才能够与浏览器节点通信。Go节点目前还没实现wss，只能通过Nginx反向代理来实现。
+参考：https://github.com/ipfs/go-ipfs/blob/master/docs/transports.md
+    https://github.com/socketio/socket.io/issues/1942
 
-```sh
-> npm install --global ipfs
-```
+Exchange-file 例子查看公网地址：https://guetdcl.cn:9090
+使用websocket协议：
 
-This will alias `jsipfs` on your machine; this is to avoid issues with `go-ipfs` being called `ipfs`.
+使用web-rtc协议：
 
-At this point, you should have either `js-ipfs` or `go-ipfs` running. Now, initialize it:
+总结 ：上次工作中，为实现三类节点能够相互连接，我们在测试时令所有节点使用了websocket（ws）协议进行通信。当ipfs-browser服务端部署到公网上的时候，浏览器端虽然可以加载ipfs-browser的代码，但是处于无安全连接的http下，浏览器不能使用一些webcrypto模块的功能，因此浏览器需要通过https从服务端那里加载代码。当ipfs-browser服务端添加ssl证书开启https之后，随之而来的是由于浏览器的安全策略问题，https模式下无法使用websocket不安全连接，这样就无法连接到其他节点了，因此下一步就是配置三类节点的websocket security（wss）。其中js-ipfs节点和ipfs-browser节点可以直接使用wss相互连接，而go节点目前仅支持通过nginx反向代理来实现wss。最后我们搭建了webrtc信令服务器，实现了节点之间的相互连接。
+注：即使go节点没有开启wss，浏览器节点也可以通过中继模式连上go节点。如下图所示：
 
-```sh
-> ipfs init
-# or
-> jsipfs init
-```
 
-This will set up an IPFS repo in your home directory.
 
-### 2. Make your daemons listen on WebSockets
 
-Now you need to edit your `config` file, the one you just set up with `{js}ipfs init`. It should be in either `~/.jsipfs/config` or `~/.ipfs/config`, depending on whether you're using JS or Go.
-
-**Note:** `js-ipfs` sets up a websocket listener by default, so if you're using the JS implementation you can skip this and just start the daemon.
-
-Since websockets support is currently not on by default, you'll need to add a WebSockets address manually. Look into your config file to find the `Addresses` section:
-
-```json
-"Addresses": {
-  "Swarm": [
-    "/ip4/0.0.0.0/tcp/4002"
-  ],
-  "API": "/ip4/127.0.0.1/tcp/5002",
-  "Gateway": "/ip4/127.0.0.1/tcp/9090"
-}
-```
-
-Add the `/ip4/127.0.0.1/tcp/4003/ws` entry to your `Swarm` array. Now it should look like this:
-
-```json
-"Addresses": {
-  "Swarm": [
-    "/ip4/0.0.0.0/tcp/4002",
-    "/ip4/127.0.0.1/tcp/4003/ws"
-  ],
-  "API": "/ip4/127.0.0.1/tcp/5002",
-  "Gateway": "/ip4/127.0.0.1/tcp/9090"
-}
-```
-
-Save the file and it should be able to listen on Websockets. We're ready to start the daemon.
-
-```sh
-> ipfs daemon
-# or
-> jsipfs daemon
-```
-
-You should see the Websocket address in the output:
-
-```sh
-Initializing daemon...
-Swarm listening on /ip4/127.0.0.1/tcp/4001
-Swarm listening on /ip4/127.0.0.1/tcp/4003/ws
-Swarm listening on /ip4/192.168.10.38/tcp/4001
-Swarm listening on /ip4/192.168.10.38/tcp/4003/ws
-API server listening on /ip4/127.0.0.1/tcp/5001
-Gateway (readonly) server listening on /ip4/0.0.0.0/tcp/8080
-Daemon is ready
-```
-
-Check the `/ws` in line 5, that means it is listening. Cool.
-
-### 3. Start the app
-
-Make sure you're in `js-ipfs/examples/exchange-files-in-browser`.
-
-We'll need to install and bundle the dependencies to run the app. Let's do it:
-
-```sh
-> npm install
-...
-> npm run bundle
-...
-> npm start
-```
-
-You should see something like this if all went well:
-
-```sh
-Starting up http-server, serving public
-Available on:
-  http://127.0.0.1:12345
-  http://192.168.2.92:12345
-Hit CTRL-C to stop the server
-```
-
-Now go to http://127.0.0.1:12345 in a modern browser and you're on!
-
-### 4. Dial to a node using WebSockets (your desktop ones)
-
-Make sure you have a daemon running. If you don't, run:
-
-```sh
-> ipfs daemon
-# or
-> jsipfs daemon
-```
-
-Open another terminal window to find the websocket addresses that it is listening on:
-
-```sh
-> ipfs id
-# or
-> jsipfs id
-```
-
-It should look like this: `/ip4/127.0.0.1/tcp/4003/ws/ipfs/<your_peer_id>`.
-
-Copy and paste the *multiaddr* to connect to that peer:
-
-![](img/connect-1.png)
-
-Check that you got connected:
-
-![](img/connect-2.png)
-
-> It only works on localhost environments because of a restriction with WebCrypto where it will not load in a page unless that page is loaded over https, or the page is served from localhost: [libp2p/js-libp2p-crypto#105][js-libp2p-crypto#105]
-
-[js-libp2p-crypto#105]: https://github.com/libp2p/js-libp2p-crypto/issues/105
-
-### 5. Transfer files between all of your nodes!
-
-Now you can add files through the CLI with:
-
-```sh
-> ipfs add <file>
-# or
-> jsipfs add <file>
-```
-
-Copy and paste the *multihash* and fetch the file in the browser!
-
-![](img/fetch.png)
-
-You can also open two browser tabs, drag and drop files in one of them, and fetch them in the other!
-
-But the coolest thing about this tutorial is `pubsub`! You can open two tabs that will share files through workspaces named after the url. Try opening two tabs with the following url:
-
-```
-http://127.0.0.1:12345/#file-exchange
-# You can substitute `file-exchange` with anything you like, just make sure the two tabs are in the same workspace.
-```
-
-Now every file that you upload in one tab will appear in the other! You can even open a new tab in that workspace and it will sync the files that were added before!
-
-![](img/pubsub.png)
