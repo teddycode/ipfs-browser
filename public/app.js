@@ -59,16 +59,16 @@ async function start() {
     libp2p: pLibp2pBundle(swarmKey),
     repo: repo,
     preload: {
-      enabled: true,
+      enabled: false,
       addresses: [
-        '/dns4/guetdcl.cn/tcp/8082/wss/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v'
+        '/dns4/guetdcl.cn/tcp/8082/https/ipfs/QmXt4bwenzr8apvhE1Lkn2HjKcdT5EZppk5P1TK9rr8B9v'
       ]
     },
     config: {
       Addresses: {
         //API: ['/ip4/127.0.0.1/tcp/5002'],
         Swarm: [
-          '/dns4/guetdcl.cn/tcp/4433/wss/p2p-websocket-star/'
+          '/dns4/guetdcl.cn/tcp/8083/wss/p2p-webrtc-star/'
         ]
       },
       Bootstrap: [

@@ -11,7 +11,8 @@ const SECIO = require('libp2p-secio')
 const Bootstrap = require('libp2p-bootstrap')
 const Protector = require('libp2p-pnet')
 const KadDHT = require('libp2p-kad-dht')
-const MDNS = require('libp2p-mdns')
+
+const GossipSub = require('libp2p-gossipsub')
 
 const pLibp2pBundle = (swarmKey) => {
   /**
@@ -52,6 +53,7 @@ const pLibp2pBundle = (swarmKey) => {
           //MDNS
         ],
         dht: KadDHT,
+       // pubsub: GossipSub,
         connProtector: new Protector(swarmKey)
       },
       config: {
